@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    
+    <title>
+        Cable Network company information
+    </title>
+    
+    <style type="text/css">
+        
+    #CableInfo
+    {
+        display: inline-block;
+    }
+        
+    </style>
+
+    <script type="text/javascript">
+    
+        var xmlDoc;
+        var index;
+        var hWin;
+        
+        //Function to Load XML
+        function loadXML(url)
+        {
+            var header;
+            if (window.XMLHttpRequest)
+            {
+                xmlhttp=new XMLHttpRequest();
+            }
+            else
+            {
+                xmlhttp=new ActiveXObject("Microsoft.XMLHTTP");
+            }
+            
+            try
+            {
+                xmlhttp.open("GET",url,false);
+            
+                xmlhttp.send();      
+                
+                if(xmlhttp.status==404)
+                {
+                    alert("URL doesn't exist!");
+                    return;
+                }
+            }
+            catch(er)
+            {
+                alert("URL doesn't exist!");
+            }
+            
+            
+            xmlDoc=xmlhttp.responseXML;
+            
+            return xmlDoc;
+        }
+        
+        //Function to Parse and View Cable Network Contents
+        function parseAndViewXML(formval)
+        {
+            if(hWin!=undefined)
+                hWin.close();
+            url=formval.URL.value;
+            if(url=="")   
+            {
+                alert("Enter a URL!");
+                return;
+            }
+            
+            xmlDoc=loadXML(url);
+            if (xmlDoc.documentElement.nodeName == "parsererror")
+            {
+                alert("Error in XML File!");
+            }
+            else
+            {
+            
+            docroot=xmlDoc.documentElement.childNodes;
+            if(is_ignorable(docroot.item(0)))
+            {
+                table=node_after(docroot.item(0))
+            }
+            else
+            {
+                table=docroot.item(0);
+            }
+            tabledata=table.childNodes;
+            
+            var headernode;
+            if(is_ignorable(tabledata.item(0)))
+            {
+                headernode=header_after(tabledata.item(0));
+            }
+            else
+            {
+                headernode=tabledata.item(0);
+                index=0;
+            }
+            
+            
+            headerdata=headernode.childNodes;
+            headerlist=[];
+            for(i=0,j=0;i<headerdata.length,j<6;i++,j++)
+            {
+                if(is_ignorable(headerdata.item(i)))
+                {
+                    headerlist[j]=node_after(headerdata.item(i));
+                    i++;
+                }
+                else
+                {
+                    headerlist[j]=headerdata.item(i);
+                }
+            }
+            
+            rootlist=[];
+            j=0;
+            for(i=index+1;i<tabledata.length;i++)
+            {  
+                if((is_ignorable(tabledata.item(i))))
+                {
+                    if(node_after(tabledata.item(i))==null)
+                        break;
+                    rootlist[j]=(node_after(tabledata.item(i)));
+                    i++;
+                    j++;
+                }
+                else
+                {
+                    rootlist[j]=tabledata.item(i);
+                    j++;
+                }
+            }
+            
+            if(rootlist.length==0)
+            {
+                alert("XML doesn't have Cable Networks!");
+                return;
+            }
+            var rootelements=[];
+            var feeds=[];
+            for(i=0;i<rootlist.length;i++)
+            {
+                rootelements[i]=[];
+                feeds[i]=[];
+            }
+            l=0;
+            for(i=0;i<rootlist.length;i++)
+            {  
+                k=0;
+                l=0;
+                for(j=0;j<rootlist[i].childNodes.length;j++)
+                {
+                    if(rootlist[i].childNodes.item(j).tagName=='Network')
+                        rootelements[i][k++]=rootlist[i].childNodes.item(j);
+                    if(rootlist[i].childNodes.item(j).tagName=='Owner')
+                        rootelements[i][k++]=rootlist[i].childNodes.item(j);
+                    if(rootlist[i].childNodes.item(j).tagName=='Feeds')
+                    {
+                        rootelements[i][k]=rootlist[i].childNodes.item(j);
+                        for(n=0;n<rootelements[i][k].childNodes.length;n++)
+                        {
+                            if(rootelements[i][k].childNodes.item(n).tagName=="Feed")
+                            {
+                                feeds[i][l]=rootelements[i][k].childNodes.item(n);
+                                l++;
+                            }
+                        }
+                        k++;
+                    }
+                    if(rootlist[i].childNodes.item(j).tagName=='Notes')
+                        rootelements[i][k++]=rootlist[i].childNodes.item(j);
+                    if(rootlist[i].childNodes.item(j).tagName=='HomePage')
+                        rootelements[i][k++]=rootlist[i].childNodes.item(j);
+                    if(rootlist[i].childNodes.item(j).tagName=='Logo')
+                        rootelements[i][k++]=rootlist[i].childNodes.item(j); 
+                }
+            }
+            
+            
+            html_text="<html><head><title>assignment 4</title></head><body>";
+            html_text+="<table border=1px>";
+            html_text+=" <tr>";
+            for(i=0;i<headerlist.length;i++)
+            {
+                html_text+="<td><center><b>"+headerlist[i].innerHTML+"</b></center></td>";
+            }
+            html_text+="</tr>";
+            for(i=0;i<rootlist.length;i++)
+            {
+                html_text+="<tr>";
+                for(j=0;j<rootelements[i].length;j++)
+                {
+                    if(rootelements[i][j].tagName=="Feeds")
+                    {
+                        if(feeds[i].length==0)
+                        {
+                            html_text+="<td>N/A</td>";
+                        }
+                        else
+                        {
+                            html_text+="<td><ul>";
+                            for(k=0;k<feeds[i].length;k++)
+                            {
+                                if(feeds[i][k].innerHTML.trim() != "" )
+                                html_text+="<li>"+feeds[i][k].innerHTML+"</li>";
+                            }
+                        html_text+="</td></ul>";
+                        }
+                    }
+                    else if(rootelements[i][j].tagName=="Logo")
+                    {
+                        if(rootelements[i][j].innerHTML.trim()=="")
+                            html_text+="<td>N/A</td>";
+                        else
+                            html_text+="<td><img src=\""+rootelements[i][j].innerHTML+"\"/></td>";
+                    }
+                    else if(rootelements[i][j].tagName=="HomePage")
+                    {
+                        if(rootelements[i][j].innerHTML.trim()=="")
+                            html_text+="<td>N/A</td>";
+                        else
+                        html_text+="<td><a href=\""+rootelements[i][j].innerHTML+"\" style=\"color:blue\">"+rootelements[i][j].innerHTML+"</a></td>";
+                    }
+                    else
+                    {
+                        if(rootelements[i][j].innerHTML.trim()=="")
+                            html_text+="<td>N/A</td>";
+                        else
+                        html_text+="<td>"+rootelements[i][j].innerHTML+"</td>"; 
+                    }
+                    
+                }
+                html_text+="</tr>";
+   
+        
+            
+                }
+         html_text+="</table>";
+         html_text+="</";
+         html_text+="body";
+         html_text+=">";
+         html_text+="</html>";
+         hWin = window.open("", "Assignment 4", "height=800,width=600,scrollbars=yes");               
+         hWin.document.write(html_text);      
+        }
+        }
+        
+        
+        //To access the next header node if current header node element is ignorable.
+        function header_after(sibling)
+        {
+            index=0;
+            while ((sibling = sibling.nextSibling)) 
+            {
+                index++;
+                if (!is_ignorable(sibling)) return sibling;
+            }
+            return null;
+        }
+        
+        //To find out if the node element is a whitespace, newline, etc.
+        function has_whitespaces(node)
+        {
+            return !(/[^\r\n\t ]/.test(node.textContent));
+        }
+        
+        //To identify if the node element can be ignored.
+        function is_ignorable(node)
+        {
+            return (node.nodeType == 8) || ((node.nodeType == 3) && has_whitespaces(node) ); 
+        }
+        
+        //To access the next node if current node element is ignorable.
+        function node_after(sibling)
+        {
+            while ((sibling = sibling.nextSibling)) 
+            {
+                if (!is_ignorable(sibling)) return sibling;
+            }
+            return null;
+        }
+        
+    </script>    
+</head>
+<body style="text-align: center; min-width: 150px; min-height: 400px;">
+<form method="post" id="CableInfo">
+    <table>
+        <tr><td align="center"><p>Enter URL for Company List XML File</p></td></tr>
+        <tr><td align="center"><p><input type="text" Name="URL" /><p/></td></tr>
+        <tr><td align="center"><p><input type="button" Value="Submit Query" onclick="parseAndViewXML(this.form);" /></p></td></tr>
+    </table>
+    </form>
+    <noscript>
+</body>
+</html>
